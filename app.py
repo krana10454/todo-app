@@ -132,6 +132,6 @@ def delete_task(task_id):
     return jsonify({"message": "Task deleted successfully!"})
 
 if __name__ == '__main__':
-    print('server is running at http://127.0.0.1:5000')
-    print('documentation at http://127.0.0.1:5000/apidocs')
+    print('server is running at http://localhost:5000')
+    print('documentation at http://localhost:5000/apidocs')
     app.run(debug=True)

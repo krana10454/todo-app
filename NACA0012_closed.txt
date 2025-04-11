@@ -1,0 +1,88 @@
+NOTES FOR TODO APPLICATION 
+
+===>BACKEND
+-->FLASK=BAKEND FRAMEWORK
+-->FLASKSQLALCHEMY= DATABSE MAMANGEMENT
+-->FLASK-CORS=ALLOWS FRONTEND AND BACKEND communication 
+
+POSTMAN TESTING 
+1. GET --> GET ALL THE TASKS, IN THIS WE ADD THE TASK AND CHECK THE TASK IN THE CURRENT TIME
+2. POST --> IN POST WE NEED TO ADD THE TASK, THIS IS DONE BY USING JSON
+{
+  "task": "Complete Flask project"
+}
+3.PUT --> THIS IS TO UPDATE A TASK
+http://127.0.0.1:5000/tasks/2 IN THIS 2 IS THE TASK NUMBER 
+IN JSON YOU WRITE,
+{
+    "completed": true
+}
+THIS WILL UPDATE THE TASK AS TRUE(COMPLETED) IF YOU CHECK IN THE GET 
+4. DELETE: THIS WILL COMPLETELY DELTE THE TASK, http://127.0.0.1:5000/tasks/2 THIS WILL COMPLETELY DELETE THE TASK 
+
+
+====> FRONTEND
+todo_app/
+│
+├── app.py             # Flask backend
+├── static/            # Folder for CSS and JS files
+│   ├── style.css      # Your styles
+│   ├── script.js      # JavaScript for API requests
+├── templates/         # Folder for HTML files
+│   └── index.html     # Main HTML page
+├── requirements.txt   # List of dependencies
+└── todo.db            # SQLite database
+
+---> for frontend we use 3 things:
+index.html == this is for the main webpage of the frontend
+style.css == this for the styling of the page
+script.js == this will handle interactions with backend
+
+--->Explanation of script.js:
+getTasks(): Fetches the list of tasks from your Flask backend and displays them. Each task is shown in an unordered list (<ul>), and it includes a button to mark the task as "Completed".
+
+addTask(): Sends a POST request to the backend with a new task that you input. If the task description is not empty, it adds the task and updates the displayed list of tasks.
+
+updateTaskStatus(): Sends a PUT request to the backend to mark a task as completed or not. When the button is clicked, the status of the task toggles between Completed and Mark as Complete.
+
+window.onload = getTasks: Automatically fetches and displays tasks when the page first loads.
+
+-->DATE: 3.4.2025 (I HAVE CHNAGED THE FILE DIRECTORY SINCE FLASK CAN SERVE HTML RATHER SERVING DIFFERENT FILE FROM THE SCRIPT.JS FILE)
+The tasks will be displayed inside the <ul id="taskList"></ul> in index.html.
+
+When you add a new task using the input field, it will be sent to the backend and stored in the database.
+
+The frontend will then fetch all tasks from the backend and display them in the task list.
+
+==> date: 4.10.2025
+- completed the frontend of the todo. now moving towards DEPLOYMENT
+--Deployment means making your app available to the public on the internet so that anyone can use it by just visiting a link
+--✅ Step 1: Prepare the Project
+We add a few files so that the deployment platform knows:
+
+What Python packages to install
+
+How to run your app
+
+✅ Step 2: Upload Code to GitHub
+GitHub is like Google Drive for code. It stores your files online so Render (or any other platform) can access and deploy them.
+
+✅ Step 3: Connect to a Deployment Platform (like Render)
+Render will take your files from GitHub, install what’s needed, and host your app online.
+
+-- 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

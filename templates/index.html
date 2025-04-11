@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ToDo App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="data:,">
+</head>
+<body>
+  <div class="top-controls">
+    <label class="switch">
+      <input type="checkbox" id="toggleDarkMode">
+      <span class="slider round"></span>
+    </label>
+
+    <div class="theme-selector">
+      <select id="themeSelect">
+        <option value="default">🌤️ Default</option>
+        <option value="dark">🌙 Dark</option>
+        <option value="ocean">🌊 Ocean</option>
+        <option value="forest">🌳 Forest</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="container">
+    <h1>ToDo App</h1>
+    <input type="text" id="taskInput" placeholder="Enter a new task">
+    <button id="addTaskBtn">Add Task</button>
+
+    <div class="filter-container">
+      <label for="filterSelect">Filter: </label>
+      <select id="filterSelect">
+        <option value="all">All Tasks</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+      </select>
+    </div>
+
+    <ul id="taskList"></ul>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

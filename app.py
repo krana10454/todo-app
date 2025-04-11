@@ -1,38 +1,37 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flasgger import Swagger
+from flask_cors import CORS  # Allow cross-origin requests (optional)
+import os
 
 app = Flask(__name__)
-Swagger(app)  # Initialize Swagger
+CORS(app)  # Enable CORS (optional, only if frontend & backend are separate origins)
+Swagger(app)  # Initialize Swagger for API documentation
 
-# Configure SQLite database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///todo.db'
+# ✅ Configure SQLite database (with absolute path)
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "todo.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# Define ToDo model
+# ✅ Define ToDo model
 class ToDo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.String(200), nullable=False)
     completed = db.Column(db.Boolean, default=False)
 
-# Create database tables
+# ✅ Create database tables if they don't exist
 with app.app_context():
     db.create_all()
 
-# Home route
+# ✅ Serve the frontend page
 @app.route('/')
 def home():
-    """Welcome Endpoint
-    ---
-    responses:
-      200:
-        description: Returns a welcome message
-    """
-    return jsonify({"message": "Welcome to the ToDo App!"})
+    """Render the frontend"""
+    return render_template("index.html")
 
-# ✅ GET all tasks
+# ✅ GET all tasks (API)
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
     """Get All Tasks
@@ -43,9 +42,9 @@ def get_tasks():
     """
     tasks = ToDo.query.all()
     task_list = [{"id": task.id, "task": task.task, "completed": task.completed} for task in tasks]
-    return jsonify(task_list)
+    return jsonify(task_list), 200
 
-# ✅ POST - Add a new task
+# ✅ POST - Add a new task (API)
 @app.route('/tasks', methods=['POST'])
 def add_task():
     """Add a New Task
@@ -72,10 +71,14 @@ def add_task():
     new_task = ToDo(task=data['task'])
     db.session.add(new_task)
     db.session.commit()
-    return jsonify({"message": "Task added successfully!", "task": {"id": new_task.id, "task": new_task.task, "completed": new_task.completed}}), 201
 
-# ✅ PATCH - Update a task
-@app.route('/tasks/<int:task_id>', methods=['PATCH'])
+    return jsonify({
+        "message": "Task added successfully!",
+        "task": {"id": new_task.id, "task": new_task.task, "completed": new_task.completed}
+    }), 201
+
+# ✅ PUT - Update a task (API)
+@app.route('/tasks/<int:task_id>', methods=['PUT'])
 def update_task(task_id):
     """Update a Task
     ---
@@ -105,9 +108,13 @@ def update_task(task_id):
     data = request.get_json()
     task.completed = data.get('completed', task.completed)
     db.session.commit()
-    return jsonify({"message": "Task updated successfully!", "task": {"id": task.id, "task": task.task, "completed": task.completed}})
 
-# ✅ DELETE - Remove a task
+    return jsonify({
+        "message": "Task updated successfully!",
+        "task": {"id": task.id, "task": task.task, "completed": task.completed}
+    }), 200
+
+# ✅ DELETE - Remove a task (API)
 @app.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task(task_id):
     """Delete a Task
@@ -129,9 +136,16 @@ def delete_task(task_id):
 
     db.session.delete(task)
     db.session.commit()
-    return jsonify({"message": "Task deleted successfully!"})
+    return jsonify({"message": "Task deleted successfully!"}), 200
 
+# ✅ Run Flask app
 if __name__ == '__main__':
-    print('server is running at http://localhost:5000')
-    print('documentation at http://localhost:5000/apidocs')
+    print("🚀 Server is running at: http://127.0.0.1:5000")
+    print("📄 API Documentation: http://127.0.0.1:5000/apidocs")
+    print("📌 Available Routes:")
+    print("   ➤ /           (Frontend)")
+    print("   ➤ /tasks      (GET all tasks)")
+    print("   ➤ /tasks      (POST new task)")
+    print("   ➤ /tasks/<id> (PUT update task)")
+    print("   ➤ /tasks/<id> (DELETE task)")
     app.run(debug=True)

@@ -1,0 +1,302 @@
+/* Reset & Base Styles */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.container {
+  background: white;
+  padding: 20px;
+  margin: 100px auto 40px;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  width: 320px;
+  text-align: center;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+input[type="text"] {
+  width: 80%;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  background: #28a745;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 20px;
+}
+
+li {
+  background: #ddd;
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+li span {
+  flex-grow: 1;
+  transition: color 0.3s;
+}
+
+li.completed {
+  background-color: #cce5cc;
+}
+
+li.completed span {
+  text-decoration: line-through;
+  color: gray;
+}
+
+li input[type="checkbox"] {
+  margin-right: 10px;
+}
+
+li button {
+  margin-left: 5px;
+  padding: 5px 10px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+li button.edit {
+  background-color: #ffc107;
+  color: white;
+}
+
+li button.delete {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* === Empty State === */
+.empty-state {
+  display: none;
+  margin-top: 20px;
+  font-size: 1rem;
+  color: #666;
+  transition: color 0.3s;
+}
+
+/* === TOP CONTROLS (top right) === */
+.top-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 100;
+}
+
+/* Toggle Switch */
+.switch input {
+  display: none;
+}
+
+.slider {
+  width: 50px;
+  height: 25px;
+  background-color: #ccc;
+  border-radius: 25px;
+  position: relative;
+  cursor: pointer;
+}
+
+.slider::before {
+  content: "";
+  position: absolute;
+  height: 21px;
+  width: 21px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #4caf50;
+}
+
+input:checked + .slider::before {
+  transform: translateX(25px);
+}
+
+/* Theme Selector */
+.theme-selector select {
+  padding: 5px 8px;
+  border-radius: 5px;
+  border: 1px solid #aaa;
+}
+
+/* === THEMES === */
+
+/* DARK THEME */
+body.theme-dark {
+  background-color: #121212;
+  color: #f1f1f1;
+}
+
+body.theme-dark .container {
+  background-color: #1e1e1e;
+  color: #f1f1f1;
+}
+
+body.theme-dark li {
+  background-color: #2c2c2c;
+}
+
+body.theme-dark li span {
+  color: #f1f1f1;
+}
+
+body.theme-dark li.completed span {
+  color: #aaaaaa;
+}
+
+body.theme-dark .empty-state {
+  color: #bbbbbb;
+}
+
+body.theme-dark input[type="text"],
+body.theme-dark button {
+  background-color: #333;
+  color: #f1f1f1;
+  border: 1px solid #444;
+}
+
+/* OCEAN THEME */
+body.theme-ocean {
+  background: linear-gradient(to right, #1e3c72, #2a5298);
+  color: #ffffff;
+}
+
+body.theme-ocean .container {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.theme-ocean li {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.theme-ocean li span {
+  color: #ffffff;
+}
+
+body.theme-ocean li.completed span {
+  color: #dcdcdc;
+}
+
+body.theme-ocean .empty-state {
+  color: #eeeeee;
+}
+
+body.theme-ocean input[type="text"],
+body.theme-ocean button {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #000;
+}
+
+/* FOREST THEME */
+body.theme-forest {
+  background: linear-gradient(to right, #134e4a, #2c7a7b);
+  color: #ffffff;
+}
+
+body.theme-forest .container {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+body.theme-forest li {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+body.theme-forest li span {
+  color: #ffffff;
+}
+
+body.theme-forest li.completed span {
+  color: #dcdcdc;
+}
+
+body.theme-forest .empty-state {
+  color: #eeeeee;
+}
+
+body.theme-forest input[type="text"],
+body.theme-forest button {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #000;
+}
+
+/* DEFAULT THEME */
+body.theme-default {
+  background-color: #f4f4f4;
+  color: #000;
+}
+
+body.theme-default .container {
+  background-color: #ffffff;
+  color: #000;
+}
+
+body.theme-default li {
+  background-color: #ddd;
+}
+
+body.theme-default li span {
+  color: #000;
+}
+
+body.theme-default li.completed span {
+  color: #777;
+}
+
+body.theme-default .empty-state {
+  color: #666;
+}
+
+input[type="date"] {
+    width: 80%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  
+  .filter-container {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  
+  .filter-container select {
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  

@@ -2,7 +2,11 @@ from flask import Flask, jsonify, request, render_template, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flasgger import Swagger
 from flask_cors import CORS  # Allow cross-origin requests (optional)
+from dotenv import load_dotenv
 import os
+
+# ✅ Load .env variables
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS (optional, only if frontend & backend are separate origins)
@@ -140,8 +144,13 @@ def delete_task(task_id):
 
 # ✅ Run Flask app
 if __name__ == '__main__':
-    print("🚀 Server is running at: http://127.0.0.1:5000")
-    print("📄 API Documentation: http://127.0.0.1:5000/apidocs")
+    port = int(os.getenv("PORT", 8000))  # Use port from .env or default
+  
+    print(f"🚀 Server is running at: http://0.0.0.0:{port}")
+    app.run(host='0.0.0.0', port=port)
+
+    
+    print("📄 API Documentation:  http://0.0.0.0:{port}/apidocs")
     print("📌 Available Routes:")
     print("   ➤ /           (Frontend)")
     print("   ➤ /tasks      (GET all tasks)")
@@ -149,3 +158,5 @@ if __name__ == '__main__':
     print("   ➤ /tasks/<id> (PUT update task)")
     print("   ➤ /tasks/<id> (DELETE task)")
     app.run(debug=True)
+
+    

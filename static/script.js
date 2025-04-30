@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const themeSelect = document.getElementById("themeSelect");
     const filterSelect = document.getElementById("filterSelect");
     const logoutBtn = document.getElementById("logoutBtn");
+    const logoutSection = document.getElementById("logoutSection"); // Added logout section
 
     // Auth elements
     const signupBtn = document.getElementById("signupBtn");
@@ -23,6 +24,26 @@ document.addEventListener("DOMContentLoaded", function () {
     // Password toggle
     const toggleLoginPassword = document.getElementById("toggleLoginPassword");
     const toggleSignupPassword = document.getElementById("toggleSignupPassword");
+
+    // Function to check if user is logged in (basic client-side check)
+    function isLoggedIn() {
+        return localStorage.getItem('loggedIn') === 'true';
+    }
+
+    // Function to update UI based on login status
+    function updateAuthUI() {
+        if (isLoggedIn()) {
+            authLinks.style.display = "none";
+            logoutSection.style.display = "block";
+            taskSection.style.display = "block";
+            fetchTasks();
+        } else {
+            authLinks.style.display = "block";
+            logoutSection.style.display = "none";
+            taskSection.style.display = "none";
+            taskList.innerHTML = "";
+        }
+    }
 
     // Apply theme from localStorage
     const savedTheme = localStorage.getItem("theme");
@@ -60,6 +81,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function displayTaskSection() {
         authLinks.style.display = "none";
+        logoutSection.style.display = "block";
         taskSection.style.display = "block";
     }
 
@@ -104,15 +126,15 @@ document.addEventListener("DOMContentLoaded", function () {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         })
-        .then(response => {
-            if (response.ok) {
-                alert("✅ Signup successful! You can now log in.");
-                hideForm(signupForm);
-            } else {
-                response.json().then(data => alert("❌ Signup failed: " + data.error));
-            }
-        })
-        .catch(error => console.error("Signup error:", error));
+            .then(response => {
+                if (response.ok) {
+                    alert("✅ Signup successful! You can now log in.");
+                    hideForm(signupForm);
+                } else {
+                    response.json().then(data => alert("❌ Signup failed: " + data.error));
+                }
+            })
+            .catch(error => console.error("Signup error:", error));
     });
 
     // Login
@@ -130,218 +152,223 @@ document.addEventListener("DOMContentLoaded", function () {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         })
-        .then(response => {
-            if (response.ok) {
-                hideForm(loginForm);
-                displayTaskSection();
-                fetchTasks();
-            } else {
-                alert("❌ Login failed. Check your credentials.");
-            }
-        })
-        .catch(error => console.error("Login error:", error));
+            .then(response => {
+                if (response.ok) {
+                    localStorage.setItem('loggedIn', 'true');
+                    hideForm(loginForm);
+                    updateAuthUI();
+                } else {
+                    alert("❌ Login failed. Check your credentials.");
+                }
+            })
+            .catch(error => console.error("Login error:", error));
     });
 
     // Logout
     if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
             fetch("/logout", { method: "POST" })
-            .then(response => {
-                if (response.ok) {
-                    alert("👋 Logged out successfully!");
-                    taskSection.style.display = "none";
-                    authLinks.style.display = "block";
-                    taskList.innerHTML = "";
-                } else {
-                    alert("⚠️ Logout failed.");
-                }
+                .then(response => {
+                    if (response.ok) {
+                        localStorage.removeItem('loggedIn');
+                        alert("👋 Logged out successfully!");
+                        updateAuthUI();
+                    }
+                    else {
+                        alert("⚠️ Logout failed.");
+                    }
+                })
+                .catch(error => console.error("Logout error:", error));
+        });
+
+
+        // Forgot Password
+        forgotPasswordLink.addEventListener("click", (e) => {
+            e.preventDefault();
+            const email = prompt("Please enter your registered email:");
+            if (!email) {
+                alert("⚠️ Email is required!");
+                return;
+            }
+            fetch("/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
             })
-            .catch(error => console.error("Logout error:", error));
+                .then(response => response.json())
+                .then(data => alert(data.message))
+                .catch(error => console.error("Forgot Password error:", error));
         });
-    }
 
-    // Forgot Password
-    forgotPasswordLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        const email = prompt("Please enter your registered email:");
-        if (!email) {
-            alert("⚠️ Email is required!");
-            return;
+        // ---------- TASK FUNCTIONS ----------
+        function addTask() {
+            const taskText = taskInput.value.trim();
+            if (taskText === "") return alert("⚠️ Please enter a task!");
+
+            fetch("/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task: taskText })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.task) {
+                        addTaskToUI(data.task);
+                        taskInput.value = "";
+                    }
+                })
+                .catch(error => console.error("Add Task error:", error));
         }
-        fetch("/forgot-password", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email })
-        })
-        .then(response => response.json())
-        .then(data => alert(data.message))
-        .catch(error => console.error("Forgot Password error:", error));
-    });
 
-    // ---------- TASK FUNCTIONS ----------
-    function addTask() {
-        const taskText = taskInput.value.trim();
-        if (taskText === "") return alert("⚠️ Please enter a task!");
+        function fetchTasks() {
+            fetch("/tasks")
+                .then(response => {
+                    if (!response.ok) {
+                        localStorage.removeItem('loggedIn');
+                        updateAuthUI();
+                        return [];
+                    }
+                    return response.json();
+                })
+                .then(tasks => {
+                    const filter = filterSelect.value;
+                    const filteredTasks = tasks.filter(task => {
+                        if (filter === "completed") return task.completed;
+                        if (filter === "pending") return !task.completed;
+                        return true;
+                    });
+                    taskList.innerHTML = "";
+                    filteredTasks.forEach(addTaskToUI);
+                    document.getElementById("emptyStateMsg").style.display = filteredTasks.length === 0 ? "block" : "none";
+                })
+                .catch(error => console.error("Fetch Tasks error:", error));
+        }
 
-        fetch("/tasks", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ task: taskText })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.task) {
-                addTaskToUI(data.task);
-                taskInput.value = "";
-            }
-        })
-        .catch(error => console.error("Add Task error:", error));
-    }
+        function addTaskToUI(task) {
+            const li = document.createElement("li");
+            li.dataset.id = task.id;
+            if (task.completed) li.classList.add("completed");
 
-    function fetchTasks() {
-        fetch("/tasks")
-        .then(response => {
-            if (!response.ok) {
-                authLinks.style.display = "block";
-                taskSection.style.display = "none";
-                return [];
-            }
-            return response.json();
-        })
-        .then(tasks => {
-            const filter = filterSelect.value;
-            const filteredTasks = tasks.filter(task => {
-                if (filter === "completed") return task.completed;
-                if (filter === "pending") return !task.completed;
-                return true;
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = task.completed;
+            checkbox.addEventListener("change", () => {
+                toggleComplete(task.id, checkbox.checked);
             });
-            taskList.innerHTML = "";
-            filteredTasks.forEach(addTaskToUI);
-        })
-        .catch(error => console.error("Fetch Tasks error:", error));
-    }
 
-    function addTaskToUI(task) {
-        const li = document.createElement("li");
-        li.dataset.id = task.id;
-        if (task.completed) li.classList.add("completed");
+            const span = document.createElement("span");
+            span.textContent = task.task;
+            span.style.flexGrow = "1";
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.checked = task.completed;
-        checkbox.addEventListener("change", () => {
-            toggleComplete(task.id, checkbox.checked);
-        });
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "✏️";
+            editBtn.classList.add("edit");
 
-        const span = document.createElement("span");
-        span.textContent = task.task;
-        span.style.flexGrow = "1";
+            let isEditing = false;
+            let input;
 
-        const editBtn = document.createElement("button");
-        editBtn.textContent = "✏️";
-        editBtn.classList.add("edit");
-
-        let isEditing = false;
-        let input;
-
-        editBtn.addEventListener("click", () => {
-            if (!isEditing) {
-                input = document.createElement("input");
-                input.type = "text";
-                input.value = task.task;
-                input.style.flexGrow = "1";
-                li.replaceChild(input, span);
-                editBtn.textContent = "💾";
-                isEditing = true;
-            } else {
-                const updatedText = input.value.trim();
-                if (updatedText === "") {
-                    alert("⚠️ Task cannot be empty!");
-                    return;
+            editBtn.addEventListener("click", () => {
+                if (!isEditing) {
+                    input = document.createElement("input");
+                    input.type = "text";
+                    input.value = task.task;
+                    input.style.flexGrow = "1";
+                    li.replaceChild(input, span);
+                    editBtn.textContent = "💾";
+                    isEditing = true;
+                } else {
+                    const updatedText = input.value.trim();
+                    if (updatedText === "") {
+                        alert("⚠️ Task cannot be empty!");
+                        return;
+                    }
+                    updateTask(task.id, updatedText, checkbox.checked)
+                        .then(() => {
+                            task.task = updatedText;
+                            span.textContent = updatedText;
+                            li.replaceChild(span, input);
+                            editBtn.textContent = "✏️";
+                            isEditing = false;
+                        });
                 }
-                updateTask(task.id, updatedText, checkbox.checked)
-                .then(() => {
-                    task.task = updatedText;
-                    span.textContent = updatedText;
-                    li.replaceChild(span, input);
-                    editBtn.textContent = "✏️";
-                    isEditing = false;
-                });
-            }
-        });
+            });
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "🗑️";
-        deleteBtn.classList.add("delete");
-        deleteBtn.addEventListener("click", () => deleteTask(task.id));
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "🗑️";
+            deleteBtn.classList.add("delete");
+            deleteBtn.addEventListener("click", () => deleteTask(task.id));
 
-        li.appendChild(checkbox);
-        li.appendChild(span);
-        li.appendChild(editBtn);
-        li.appendChild(deleteBtn);
-        taskList.appendChild(li);
-    }
-
-    function toggleComplete(id, completed) {
-        fetch(`/tasks/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ completed })
-        })
-        .then(() => {
-            const currentFilter = filterSelect.value;
-            if (currentFilter !== "all") {
-                fetchTasks();
-            } else {
-                const li = document.querySelector(`li[data-id='${id}']`);
-                if (li) li.classList.toggle("completed", completed);
-            }
-        })
-        .catch(error => console.error("Toggle Complete error:", error));
-    }
-
-    function updateTask(id, newText, completed) {
-        return fetch(`/tasks/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ task: newText, completed })
-        });
-    }
-
-    function deleteTask(id) {
-        fetch(`/tasks/${id}`, { method: "DELETE" })
-        .then(() => {
-            const li = document.querySelector(`li[data-id='${id}']`);
-            if (li) li.remove();
-        })
-        .catch(error => console.error("Delete Task error:", error));
-    }
-
-    function applyTheme(theme) {
-        document.body.className = "";
-        if (theme !== "default") {
-            document.body.classList.add(`theme-${theme}`);
+            li.appendChild(checkbox);
+            li.appendChild(span);
+            li.appendChild(editBtn);
+            li.appendChild(deleteBtn);
+            taskList.appendChild(li);
         }
+
+        function toggleComplete(id, completed) {
+            fetch(`/tasks/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ completed })
+            })
+                .then(() => {
+                    const currentFilter = filterSelect.value;
+                    if (currentFilter !== "all") {
+                        fetchTasks();
+                    } else {
+                        const li = document.querySelector(`li[data-id='${id}']`);
+                        if (li) li.classList.toggle("completed", completed);
+                    }
+                })
+                .catch(error => console.error("Toggle Complete error:", error));
+        }
+
+        function updateTask(id, newText, completed) {
+            return fetch(`/tasks/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ task: newText, completed })
+            });
+        }
+
+        function deleteTask(id) {
+            fetch(`/tasks/${id}`, { method: "DELETE" })
+                .then(() => {
+                    const li = document.querySelector(`li[data-id='${id}']`);
+                    if (li) li.remove();
+                    if (taskList.children.length === 0) {
+                        document.getElementById("emptyStateMsg").style.display = "block";
+                    }
+                })
+                .catch(error => console.error("Delete Task error:", error));
+        }
+
+        function applyTheme(theme) {
+            document.body.className = "";
+            if (theme !== "default") {
+                document.body.classList.add(`theme-${theme}`);
+            }
+        }
+
+        // ---------- Event Listeners ----------
+        addTaskButton.addEventListener("click", addTask);
+
+        taskInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") addTask();
+        });
+
+        filterSelect.addEventListener("change", fetchTasks);
+        darkModeToggle.addEventListener("change", () => {
+            document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", darkModeToggle.checked);
+        });
+        themeSelect.addEventListener("change", () => {
+            const selected = themeSelect.value;
+            applyTheme(selected);
+            localStorage.setItem("theme", selected);
+        });
+
+        // Initial load and auth check
+        updateAuthUI();
     }
-
-    // ---------- Event Listeners ----------
-    addTaskButton.addEventListener("click", addTask);
-
-    taskInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") addTask();
-    });
-
-    filterSelect.addEventListener("change", fetchTasks);
-    darkModeToggle.addEventListener("change", () => {
-        document.body.classList.toggle("dark-mode");
-        localStorage.setItem("darkMode", darkModeToggle.checked);
-    });
-    themeSelect.addEventListener("change", () => {
-        const selected = themeSelect.value;
-        applyTheme(selected);
-        localStorage.setItem("theme", selected);
-    });
-
-    // Initial load
-    fetchTasks();
 });

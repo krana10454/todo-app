@@ -85,7 +85,7 @@ def signup():
             return jsonify({"error": "User already exists."}), 409
 
         hashed_password = generate_password_hash(password)
-        mongo.insert_user(email, hashed_password)
+        result = mongo.insert_user(email, hashed_password)
         return jsonify({"message": "User registered successfully!"}), 201
     except Exception as e:
         print(f"Signup error: {e}")
@@ -102,7 +102,11 @@ def login():
         if not user or not check_password_hash(user['password'], password):
             return jsonify({"error": "Invalid email or password"}), 401
 
-        return jsonify({"message": "Login successful!"}), 200
+        # Return the user ID for client-side storage
+        return jsonify({
+            "message": "Login successful!",
+            "userID": str(user['_id'])
+        }), 200
     except Exception as e:
         print(f"Login error: {e}")
         return jsonify({"error": "An error occurred during login."}), 500
@@ -150,14 +154,27 @@ def forgot_password():
         print(f"Forgot password error: {e}")
         return jsonify({"error": "An error occurred during the password reset process."}), 500
 
+# Legacy endpoint - keep for compatibility but use with caution
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
     try:
+        # This is now deprecated - users should use the user-specific endpoint
         tasks = list(mongo.find_all_tasks())
         result = [{"id": str(task["_id"]), "task": task["task"], "completed": task["completed"]} for task in tasks]
         return jsonify(result), 200
     except Exception as e:
         print(f"Get tasks error: {e}")
+        return jsonify({"error": "An error occurred while fetching tasks."}), 500
+
+# New endpoint to get tasks by user ID
+@app.route('/tasks/user/<user_id>', methods=['GET'])
+def get_tasks_by_user_id(user_id):
+    try:
+        tasks = list(mongo.find_tasks_by_user_id(user_id))
+        result = [{"id": str(task["_id"]), "task": task["task"], "completed": task["completed"]} for task in tasks]
+        return jsonify(result), 200
+    except Exception as e:
+        print(f"Get tasks by user ID error: {e}")
         return jsonify({"error": "An error occurred while fetching tasks."}), 500
 
 @app.route('/tasks', methods=['POST'])
@@ -166,7 +183,8 @@ def add_task():
         data = request.get_json()
         task_data = {
             "task": data['task'],
-            "completed": False
+            "completed": False,
+            "userID": data.get('userID')  # Associate task with user
         }
 
         print("Adding task data:", task_data)  # Debugging line
@@ -175,7 +193,8 @@ def add_task():
         
         result = mongo.insert_task(task_data)
         print("Insert result:", result)  # Debugging line   
-        task_data['_id'] = str(result.inserted_id)  # Add this line to include the ID in the response
+        task_data['id'] = str(result.inserted_id)  # Use 'id' key for consistency
+        task_data.pop('_id', None)  # Remove the _id key if present
         print("Task data after insert:", task_data)  # Debugging line
         return jsonify({"message": "Task added successfully!", "task": task_data}), 201
     except Exception as e:

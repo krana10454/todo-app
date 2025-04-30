@@ -30,13 +30,18 @@ document.addEventListener("DOMContentLoaded", function () {
         return localStorage.getItem('loggedIn') === 'true';
     }
 
+    // Function to get the current user ID
+    function getCurrentUserID() {
+        return localStorage.getItem('userID');
+    }
+
     // Function to update UI based on login status
     function updateAuthUI() {
         if (isLoggedIn()) {
             authLinks.style.display = "none";
             logoutSection.style.display = "block";
             taskSection.style.display = "block";
-            fetchTasks();
+            fetchTasksByUserID(getCurrentUserID());
         } else {
             authLinks.style.display = "block";
             logoutSection.style.display = "none";
@@ -152,9 +157,11 @@ document.addEventListener("DOMContentLoaded", function () {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password })
         })
-            .then(response => {
-                if (response.ok) {
+            .then(response => response.json())
+            .then(data => {
+                if (data.userID) {
                     localStorage.setItem('loggedIn', 'true');
+                    localStorage.setItem('userID', data.userID);
                     hideForm(loginForm);
                     updateAuthUI();
                 } else {
@@ -171,6 +178,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(response => {
                     if (response.ok) {
                         localStorage.removeItem('loggedIn');
+                        localStorage.removeItem('userID');
                         alert("👋 Logged out successfully!");
                         updateAuthUI();
                     }
@@ -208,7 +216,10 @@ document.addEventListener("DOMContentLoaded", function () {
             fetch("/tasks", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ task: taskText })
+                body: JSON.stringify({
+                    task: taskText,
+                    userID: getCurrentUserID()
+                })
             })
                 .then(response => response.json())
                 .then(data => {
@@ -220,8 +231,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 .catch(error => console.error("Add Task error:", error));
         }
 
-        function fetchTasks() {
-            fetch("/tasks")
+        function fetchTasksByUserID(userID) {
+            if (!userID) {
+                console.error("No user ID available");
+                localStorage.removeItem('loggedIn');
+                updateAuthUI();
+                return;
+            }
+
+            fetch(`/tasks/user/${userID}`)
                 .then(response => {
                     if (!response.ok) {
                         localStorage.removeItem('loggedIn');
@@ -242,6 +260,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     document.getElementById("emptyStateMsg").style.display = filteredTasks.length === 0 ? "block" : "none";
                 })
                 .catch(error => console.error("Fetch Tasks error:", error));
+        }
+
+        // Legacy function kept for compatibility
+        function fetchTasks() {
+            fetchTasksByUserID(getCurrentUserID());
         }
 
         function addTaskToUI(task) {
@@ -314,7 +337,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 .then(() => {
                     const currentFilter = filterSelect.value;
                     if (currentFilter !== "all") {
-                        fetchTasks();
+                        fetchTasksByUserID(getCurrentUserID());
                     } else {
                         const li = document.querySelector(`li[data-id='${id}']`);
                         if (li) li.classList.toggle("completed", completed);
@@ -357,7 +380,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (event.key === "Enter") addTask();
         });
 
-        filterSelect.addEventListener("change", fetchTasks);
+        filterSelect.addEventListener("change", () => fetchTasksByUserID(getCurrentUserID()));
         darkModeToggle.addEventListener("change", () => {
             document.body.classList.toggle("dark-mode");
             localStorage.setItem("darkMode", darkModeToggle.checked);

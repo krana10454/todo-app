@@ -1,162 +1,194 @@
-from flask import Flask, jsonify, request, render_template, url_for
-from flask_sqlalchemy import SQLAlchemy
-from flasgger import Swagger
-from flask_cors import CORS  # Allow cross-origin requests (optional)
-from dotenv import load_dotenv
 import os
+import re
+import random
+import string
+from flask import Flask, jsonify, request, render_template
+from flask_cors import CORS
+from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+from pymongo import MongoClient
+from bson import ObjectId
+from urllib.parse import quote_plus
+import smtplib
+from email.mime.text import MIMEText
 
-# ✅ Load .env variables
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS (optional, only if frontend & backend are separate origins)
-Swagger(app)  # Initialize Swagger for API documentation
+CORS(app)
 
-# ✅ Configure SQLite database (with absolute path)
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(BASE_DIR, "todo.db")}'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# Retrieve and encode MongoDB credentials
+username = os.getenv("MONGO_USERNAME")
+password = os.getenv("MONGO_PASSWORD")
+host = os.getenv("MONGO_HOST")
+dbname = os.getenv("MONGO_DBNAME")
 
-db = SQLAlchemy(app)
+# Email configuration (move these to environment variables for security)
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+SMTP_SERVER = 'smtp.gmail.com'
+SMTP_PORT = 587
 
-# ✅ Define ToDo model
-class ToDo(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    task = db.Column(db.String(200), nullable=False)
-    completed = db.Column(db.Boolean, default=False)
+# Ensure all environment variables are set
+if None in [username, password, host, dbname, EMAIL_ADDRESS, EMAIL_PASSWORD]:
+    raise ValueError("One or more required environment variables are missing.")
 
-# ✅ Create database tables if they don't exist
-with app.app_context():
-    db.create_all()
+# Encode the username and password
+username = quote_plus(username)
+password = quote_plus(password)
 
-# ✅ Serve the frontend page
+# Construct the MongoDB URI (corrected)
+mongo_uri = f"mongodb+srv://{username}:{password}@{host}/{dbname}?retryWrites=true&w=majority"
+
+# Connect to MongoDB
+client = MongoClient(mongo_uri)
+db = client[dbname]
+users_collection = db['users']
+tasks_collection = db['tasks']
+
+# Utility functions (no changes needed)
+def is_valid_password(password):
+    if (len(password) < 8 or
+        not re.search(r'[A-Z]', password) or
+        not re.search(r'[0-9]', password) or
+        not re.search(r'[@#$&*!]', password)):
+        return False
+    return True
+
+def generate_temp_password(length=10):
+    upper = random.choice(string.ascii_uppercase)
+    digit = random.choice(string.digits)
+    special = random.choice("@#$&*!")
+    remaining = ''.join(random.choices(string.ascii_letters + string.digits, k=length - 3))
+    temp_password = upper + digit + special + remaining
+    return ''.join(random.sample(temp_password, len(temp_password)))
+
+# Email sending function
+def send_email(recipient_email, subject, body):
+    try:
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = recipient_email
+
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, recipient_email, msg.as_string())
+        print(f"Email sent successfully to {recipient_email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
+# Routes (only the /forgot-password route is updated)
 @app.route('/')
 def home():
-    """Render the frontend"""
     return render_template("index.html")
 
-# ✅ GET all tasks (API)
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required."}), 400
+    if not email.endswith('@gmail.com'):
+        return jsonify({"error": "Please use a Gmail address for registration."}), 400
+    if not is_valid_password(password):
+        return jsonify({"error": "Password requirements not met."}), 400
+    if users_collection.find_one({"email": email}):
+        return jsonify({"error": "User already exists."}), 409
+
+    hashed_password = generate_password_hash(password)
+    users_collection.insert_one({"email": email, "password": hashed_password})
+    return jsonify({"message": "User registered successfully!"}), 201
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
+
+    user = users_collection.find_one({"email": email})
+    if not user or not check_password_hash(user['password'], password):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    return jsonify({"message": "Login successful!"}), 200
+
+@app.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+
+    user = users_collection.find_one({"email": email})
+    if not user:
+        return jsonify({"error": "No user found with that email."}), 404
+
+    temp_password = generate_temp_password()
+    hashed_password = generate_password_hash(temp_password)
+    users_collection.update_one({"email": email}, {"$set": {"password": hashed_password}})
+
+    subject = "Your Temporary Password"
+    body = f"""
+    Hello,
+
+    You have requested a password reset for your ToDo App account. Your temporary password is:
+
+    {temp_password}
+
+    Please log in using this password and consider changing it to a new, strong password in your account settings after logging in.
+
+    If you did not request this password reset, please ignore this email.
+
+    Thank you,
+    The ToDo App Team
+    """
+
+    # Send the email
+    send_email(email, subject, body)
+
+    return jsonify({"message": "A temporary password has been sent to your email."}), 200
+
 @app.route('/tasks', methods=['GET'])
 def get_tasks():
-    """Get All Tasks
-    ---
-    responses:
-      200:
-        description: Returns a list of all tasks
-    """
-    tasks = ToDo.query.all()
-    task_list = [{"id": task.id, "task": task.task, "completed": task.completed} for task in tasks]
-    return jsonify(task_list), 200
+    tasks = list(tasks_collection.find())
+    result = [{"id": str(task["_id"]), "task": task["task"], "completed": task["completed"]} for task in tasks]
+    return jsonify(result), 200
 
-# ✅ POST - Add a new task (API)
 @app.route('/tasks', methods=['POST'])
 def add_task():
-    """Add a New Task
-    ---
-    parameters:
-      - name: task
-        in: body
-        required: true
-        schema:
-          type: object
-          properties:
-            task:
-              type: string
-    responses:
-      201:
-        description: Task added successfully
-      400:
-        description: Task description is required
-    """
     data = request.get_json()
-    if not data or 'task' not in data:
-        return jsonify({"error": "Task description is required!"}), 400
+    task_data = {
+        "task": data['task'],
+        "completed": False
+    }
+    result = tasks_collection.insert_one(task_data)
+    task_data['id'] = str(result.inserted_id)
+    return jsonify({"message": "Task added successfully!", "task": task_data}), 201
 
-    new_task = ToDo(task=data['task'])
-    db.session.add(new_task)
-    db.session.commit()
-
-    return jsonify({
-        "message": "Task added successfully!",
-        "task": {"id": new_task.id, "task": new_task.task, "completed": new_task.completed}
-    }), 201
-
-# ✅ PUT - Update a task (API)
-@app.route('/tasks/<int:task_id>', methods=['PUT'])
+@app.route('/tasks/<task_id>', methods=['PUT'])
 def update_task(task_id):
-    """Update a Task
-    ---
-    parameters:
-      - name: task_id
-        in: path
-        required: true
-        type: integer
-      - name: completed
-        in: body
-        required: true
-        schema:
-          type: object
-          properties:
-            completed:
-              type: boolean
-    responses:
-      200:
-        description: Task updated successfully
-      404:
-        description: Task not found
-    """
-    task = ToDo.query.get(task_id)
-    if not task:
-        return jsonify({"error": "Task not found"}), 404
-
     data = request.get_json()
-    task.completed = data.get('completed', task.completed)
-    db.session.commit()
+    update_fields = {}
+    if 'task' in data:
+        update_fields['task'] = data['task']
+    if 'completed' in data:
+        update_fields['completed'] = data['completed']
 
-    return jsonify({
-        "message": "Task updated successfully!",
-        "task": {"id": task.id, "task": task.task, "completed": task.completed}
-    }), 200
-
-# ✅ DELETE - Remove a task (API)
-@app.route('/tasks/<int:task_id>', methods=['DELETE'])
-def delete_task(task_id):
-    """Delete a Task
-    ---
-    parameters:
-      - name: task_id
-        in: path
-        required: true
-        type: integer
-    responses:
-      200:
-        description: Task deleted successfully
-      404:
-        description: Task not found
-    """
-    task = ToDo.query.get(task_id)
-    if not task:
+    result = tasks_collection.update_one({"_id": ObjectId(task_id)}, {"$set": update_fields})
+    if result.matched_count == 0:
         return jsonify({"error": "Task not found"}), 404
 
-    db.session.delete(task)
-    db.session.commit()
+    return jsonify({"message": "Task updated successfully!"}), 200
+
+@app.route('/tasks/<task_id>', methods=['DELETE'])
+def delete_task(task_id):
+    result = tasks_collection.delete_one({"_id": ObjectId(task_id)})
+    if result.deleted_count == 0:
+        return jsonify({"error": "Task not found"}), 404
+
     return jsonify({"message": "Task deleted successfully!"}), 200
 
-# ✅ Run Flask app
 if __name__ == '__main__':
-    port = int(os.getenv("PORT", 8000))  # Use port from .env or default
-  
-    print(f"🚀 Server is running at: http://0.0.0.0:{port}")
-    app.run(host='0.0.0.0', port=port)
-
-    
-    print("📄 API Documentation:  http://0.0.0.0:{port}/apidocs")
-    print("📌 Available Routes:")
-    print("   ➤ /           (Frontend)")
-    print("   ➤ /tasks      (GET all tasks)")
-    print("   ➤ /tasks      (POST new task)")
-    print("   ➤ /tasks/<id> (PUT update task)")
-    print("   ➤ /tasks/<id> (DELETE task)")
     app.run(debug=True)
-
-    

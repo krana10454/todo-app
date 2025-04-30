@@ -70,7 +70,15 @@ GitHub is like Google Drive for code. It stores your files online so Render (or 
 ✅ Step 3: Connect to a Deployment Platform (like Render)
 Render will take your files from GitHub, install what’s needed, and host your app online.
 
--- 
+--https://todo-app-1-lz9d.onrender.com
+
+mongo db - password - zMpEBI8k4JzSvCmU
+----NEW TASKS:
+
+- No database on server now, I want to use REmote database of Mongo Atlas
+- Want to setup a user signup and login page (email and password only)
+- SQL injection prevention
+-  
 
 
 

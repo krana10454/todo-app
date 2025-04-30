@@ -5,7 +5,26 @@ document.addEventListener("DOMContentLoaded", function () {
     const darkModeToggle = document.getElementById("toggleDarkMode");
     const themeSelect = document.getElementById("themeSelect");
     const filterSelect = document.getElementById("filterSelect");
+    const logoutBtn = document.getElementById("logoutBtn");
 
+    // Auth elements
+    const signupBtn = document.getElementById("signupBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const signupForm = document.getElementById("signupForm");
+    const loginForm = document.getElementById("loginForm");
+    const signupSubmitBtn = document.getElementById("signupSubmitBtn");
+    const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+    const closeSignupForm = document.getElementById("closeSignupForm");
+    const closeLoginForm = document.getElementById("closeLoginForm");
+    const taskSection = document.getElementById("taskSection");
+    const authLinks = document.getElementById("authLinks");
+    const forgotPasswordLink = document.getElementById("forgotPasswordLink");
+
+    // Password toggle
+    const toggleLoginPassword = document.getElementById("toggleLoginPassword");
+    const toggleSignupPassword = document.getElementById("toggleSignupPassword");
+
+    // Apply theme from localStorage
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme) {
         applyTheme(savedTheme);
@@ -17,12 +36,152 @@ document.addEventListener("DOMContentLoaded", function () {
         darkModeToggle.checked = true;
     }
 
-    function addTask() {
-        const taskText = taskInput.value.trim();
-        if (taskText === "") {
-            alert("⚠️ Please enter a task!");
+    // ---------- AUTH FUNCTIONS ----------
+    function showForm(form) {
+        form.style.display = "block";
+    }
+
+    function hideForm(form) {
+        form.style.display = "none";
+    }
+
+    signupBtn.addEventListener("click", () => {
+        showForm(signupForm);
+        hideForm(loginForm);
+    });
+
+    loginBtn.addEventListener("click", () => {
+        showForm(loginForm);
+        hideForm(signupForm);
+    });
+
+    if (closeSignupForm) closeSignupForm.addEventListener("click", () => hideForm(signupForm));
+    if (closeLoginForm) closeLoginForm.addEventListener("click", () => hideForm(loginForm));
+
+    function displayTaskSection() {
+        authLinks.style.display = "none";
+        taskSection.style.display = "block";
+    }
+
+    // Password Toggle
+    function setupPasswordToggle(toggleElement, inputField) {
+        toggleElement.addEventListener("click", () => {
+            if (inputField.type === "password") {
+                inputField.type = "text";
+                toggleElement.textContent = "🙈";
+            } else {
+                inputField.type = "password";
+                toggleElement.textContent = "👁";
+            }
+        });
+    }
+    setupPasswordToggle(toggleLoginPassword, document.getElementById("loginPassword"));
+    setupPasswordToggle(toggleSignupPassword, document.getElementById("signupPassword"));
+
+    // Validate email domain
+    function isValidEmailDomain(email) {
+        const domainPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}$/;
+        return domainPattern.test(email);
+    }
+
+    // Signup
+    signupSubmitBtn.addEventListener("click", () => {
+        const email = document.getElementById("signupEmail").value.trim();
+        const password = document.getElementById("signupPassword").value.trim();
+
+        if (!email || !password) {
+            alert("⚠️ Please fill in both fields!");
             return;
         }
+
+        if (!isValidEmailDomain(email)) {
+            alert("⚠️ Please enter a valid email address!");
+            return;
+        }
+
+        fetch("/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("✅ Signup successful! You can now log in.");
+                hideForm(signupForm);
+            } else {
+                response.json().then(data => alert("❌ Signup failed: " + data.error));
+            }
+        })
+        .catch(error => console.error("Signup error:", error));
+    });
+
+    // Login
+    loginSubmitBtn.addEventListener("click", () => {
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
+
+        if (!email || !password) {
+            alert("⚠️ Please fill in both fields!");
+            return;
+        }
+
+        fetch("/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        })
+        .then(response => {
+            if (response.ok) {
+                hideForm(loginForm);
+                displayTaskSection();
+                fetchTasks();
+            } else {
+                alert("❌ Login failed. Check your credentials.");
+            }
+        })
+        .catch(error => console.error("Login error:", error));
+    });
+
+    // Logout
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+            fetch("/logout", { method: "POST" })
+            .then(response => {
+                if (response.ok) {
+                    alert("👋 Logged out successfully!");
+                    taskSection.style.display = "none";
+                    authLinks.style.display = "block";
+                    taskList.innerHTML = "";
+                } else {
+                    alert("⚠️ Logout failed.");
+                }
+            })
+            .catch(error => console.error("Logout error:", error));
+        });
+    }
+
+    // Forgot Password
+    forgotPasswordLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        const email = prompt("Please enter your registered email:");
+        if (!email) {
+            alert("⚠️ Email is required!");
+            return;
+        }
+        fetch("/forgot-password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        })
+        .then(response => response.json())
+        .then(data => alert(data.message))
+        .catch(error => console.error("Forgot Password error:", error));
+    });
+
+    // ---------- TASK FUNCTIONS ----------
+    function addTask() {
+        const taskText = taskInput.value.trim();
+        if (taskText === "") return alert("⚠️ Please enter a task!");
 
         fetch("/tasks", {
             method: "POST",
@@ -35,24 +194,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 addTaskToUI(data.task);
                 taskInput.value = "";
             }
-        });
+        })
+        .catch(error => console.error("Add Task error:", error));
     }
 
     function fetchTasks() {
         fetch("/tasks")
-            .then(response => response.json())
-            .then(tasks => {
-                const filter = filterSelect.value;
-
-                const filteredTasks = tasks.filter(task => {
-                    if (filter === "completed") return task.completed;
-                    if (filter === "pending") return !task.completed;
-                    return true;
-                });
-
-                taskList.innerHTML = "";
-                filteredTasks.forEach(addTaskToUI);
+        .then(response => {
+            if (!response.ok) {
+                authLinks.style.display = "block";
+                taskSection.style.display = "none";
+                return [];
+            }
+            return response.json();
+        })
+        .then(tasks => {
+            const filter = filterSelect.value;
+            const filteredTasks = tasks.filter(task => {
+                if (filter === "completed") return task.completed;
+                if (filter === "pending") return !task.completed;
+                return true;
             });
+            taskList.innerHTML = "";
+            filteredTasks.forEach(addTaskToUI);
+        })
+        .catch(error => console.error("Fetch Tasks error:", error));
     }
 
     function addTaskToUI(task) {
@@ -84,7 +250,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 input.type = "text";
                 input.value = task.task;
                 input.style.flexGrow = "1";
-
                 li.replaceChild(input, span);
                 editBtn.textContent = "💾";
                 isEditing = true;
@@ -94,15 +259,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     alert("⚠️ Task cannot be empty!");
                     return;
                 }
-
                 updateTask(task.id, updatedText, checkbox.checked)
-                    .then(() => {
-                        task.task = updatedText;
-                        span.textContent = updatedText;
-                        li.replaceChild(span, input);
-                        editBtn.textContent = "✏️";
-                        isEditing = false;
-                    });
+                .then(() => {
+                    task.task = updatedText;
+                    span.textContent = updatedText;
+                    li.replaceChild(span, input);
+                    editBtn.textContent = "✏️";
+                    isEditing = false;
+                });
             }
         });
 
@@ -130,11 +294,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 fetchTasks();
             } else {
                 const li = document.querySelector(`li[data-id='${id}']`);
-                if (li) {
-                    li.classList.toggle("completed", completed);
-                }
+                if (li) li.classList.toggle("completed", completed);
             }
-        });
+        })
+        .catch(error => console.error("Toggle Complete error:", error));
     }
 
     function updateTask(id, newText, completed) {
@@ -147,10 +310,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function deleteTask(id) {
         fetch(`/tasks/${id}`, { method: "DELETE" })
-            .then(() => {
-                const li = document.querySelector(`li[data-id='${id}']`);
-                if (li) li.remove();
-            });
+        .then(() => {
+            const li = document.querySelector(`li[data-id='${id}']`);
+            if (li) li.remove();
+        })
+        .catch(error => console.error("Delete Task error:", error));
     }
 
     function applyTheme(theme) {
@@ -160,7 +324,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    // ---------- Event Listeners ----------
     addTaskButton.addEventListener("click", addTask);
+
+    taskInput.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") addTask();
+    });
+
     filterSelect.addEventListener("change", fetchTasks);
     darkModeToggle.addEventListener("change", () => {
         document.body.classList.toggle("dark-mode");
@@ -172,5 +342,6 @@ document.addEventListener("DOMContentLoaded", function () {
         localStorage.setItem("theme", selected);
     });
 
+    // Initial load
     fetchTasks();
 });

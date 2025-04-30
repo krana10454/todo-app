@@ -13,12 +13,43 @@ body {
   margin: 100px auto 40px;
   border-radius: 10px;
   box-shadow: 0 0 15px rgba(0,0,0,0.1);
-  width: 320px;
+  width: 90%;
+  max-width: 400px;
   text-align: center;
   transition: background-color 0.3s, color 0.3s;
 }
 
-input[type="text"] {
+.input-group {
+  position: relative;
+  width: 80%;
+  margin: 10px auto;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  padding-right: 30px; /* space for toggle icon */
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  color: #007bff;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Standard Inputs & Buttons */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"] {
   width: 80%;
   padding: 10px;
   margin: 10px 0;
@@ -29,12 +60,22 @@ input[type="text"] {
 
 button {
   padding: 10px 20px;
+  margin-top: 5px;
+  margin-bottom: 5px;
   border: none;
   background: #28a745;
   color: white;
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
+}
+
+.password-rules {
+  width: 80%;
+  margin: 0 auto 10px;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #333;
 }
 
 ul {
@@ -90,7 +131,7 @@ li button.delete {
   color: white;
 }
 
-/* === Empty State === */
+/* Empty State */
 .empty-state {
   display: none;
   margin-top: 20px;
@@ -99,7 +140,7 @@ li button.delete {
   transition: color 0.3s;
 }
 
-/* === TOP CONTROLS (top right) === */
+/* Top Controls */
 .top-controls {
   position: absolute;
   top: 10px;
@@ -151,9 +192,40 @@ input:checked + .slider::before {
   border: 1px solid #aaa;
 }
 
-/* === THEMES === */
+/* Filter Container */
+.filter-container {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  text-align: left;
+}
 
-/* DARK THEME */
+.filter-container select {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+/* Auth Buttons */
+#authLinks {
+  margin: 15px 0;
+}
+
+#authLinks button {
+  background-color: #007bff;
+  margin: 5px;
+}
+
+/* Auth Forms - Updated to inherit container background */
+.auth-form {
+  display: none;
+  margin: 20px 0;
+  background-color: inherit;
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+}
+
+/* === THEMES === */
 body.theme-dark {
   background-color: #121212;
   color: #f1f1f1;
@@ -180,7 +252,7 @@ body.theme-dark .empty-state {
   color: #bbbbbb;
 }
 
-body.theme-dark input[type="text"],
+body.theme-dark input,
 body.theme-dark button {
   background-color: #333;
   color: #f1f1f1;
@@ -195,14 +267,14 @@ body.theme-ocean {
 
 body.theme-ocean .container {
   background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
 }
 
 body.theme-ocean li {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-body.theme-ocean li span {
+body.theme-ocean li span,
+body.theme-ocean .empty-state {
   color: #ffffff;
 }
 
@@ -210,11 +282,7 @@ body.theme-ocean li.completed span {
   color: #dcdcdc;
 }
 
-body.theme-ocean .empty-state {
-  color: #eeeeee;
-}
-
-body.theme-ocean input[type="text"],
+body.theme-ocean input,
 body.theme-ocean button {
   background-color: rgba(255, 255, 255, 0.85);
   color: #000;
@@ -228,14 +296,14 @@ body.theme-forest {
 
 body.theme-forest .container {
   background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
 }
 
 body.theme-forest li {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-body.theme-forest li span {
+body.theme-forest li span,
+body.theme-forest .empty-state {
   color: #ffffff;
 }
 
@@ -243,11 +311,7 @@ body.theme-forest li.completed span {
   color: #dcdcdc;
 }
 
-body.theme-forest .empty-state {
-  color: #eeeeee;
-}
-
-body.theme-forest input[type="text"],
+body.theme-forest input,
 body.theme-forest button {
   background-color: rgba(255, 255, 255, 0.85);
   color: #000;
@@ -280,23 +344,18 @@ body.theme-default .empty-state {
   color: #666;
 }
 
-input[type="date"] {
-    width: 80%;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+/* Responsive */
+@media (max-width: 480px) {
+  .container {
+    width: 95%;
+    margin: 60px auto 20px;
   }
-  
-  .filter-container {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    text-align: left;
+  .top-controls {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
   }
-  
-  .filter-container select {
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+  button {
+    width: 90%;
   }
-  
+}

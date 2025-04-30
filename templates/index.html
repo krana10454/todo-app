@@ -1,19 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>ToDo App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern ToDo App</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <link rel="icon" href="data:,">
 </head>
-<body>
 
-  <!-- === Dark Mode & Theme Controls === -->
+<body>
+  <!-- Notification Container -->
+  <div id="notificationContainer"></div>
+
+  <!-- Dark Mode & Theme Controls -->
   <div class="top-controls">
-    <label class="switch">
+    <label class="theme-switch">
       <input type="checkbox" id="toggleDarkMode">
-      <span class="slider round"></span>
+      <span class="slider"></span>
     </label>
     <div class="theme-selector">
       <select id="themeSelect">
@@ -25,81 +29,211 @@
     </div>
   </div>
 
-  <!-- === Main App Container === -->
+  <!-- Main App Container -->
   <div class="container">
-    <h1>📝 ToDo App</h1>
-
-    <!-- === Authentication Buttons === -->
-    <div id="authLinks">
-      <button id="signupBtn">Sign Up</button>
-      <button id="loginBtn">Log In</button>
+    <!-- Container Header -->
+    <div class="container-header">
+      <h1>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        ToDo App
+      </h1>
     </div>
 
-    <!-- === Logout Button (Hidden Initially) === -->
-    <div id="logoutSection" style="display: none;">
-      <button id="logoutBtn">Log Out</button>
-    </div>
-
-    <!-- === Sign Up Form === -->
-    <div id="signupForm" class="auth-form">
-      <h2>Create Account</h2>
-      <div class="input-group">
-        <input type="email" id="signupEmail" placeholder="Email" required />
-      </div>
-      <div class="input-group">
-        <input type="password" id="signupPassword" placeholder="Password" required />
-        <span id="toggleSignupPassword" class="toggle-password" title="Show Password">👁</span>
-      </div>
-      <div class="password-rules">
-        <small>
-          Password must be at least 8 characters, contain one uppercase letter, one digit, and one special character (@, #, $, &, *, !).
-        </small>
-      </div>
-      <button id="signupSubmitBtn">Register</button>
-      <button id="closeSignupForm">Cancel</button>
-    </div>
-
-    <!-- === Login Form === -->
-    <div id="loginForm" class="auth-form">
-      <h2>Welcome Back</h2>
-      <div class="input-group">
-        <input type="email" id="loginEmail" placeholder="Email" required />
-      </div>
-      <div class="input-group">
-        <input type="password" id="loginPassword" placeholder="Password" required />
-        <span id="toggleLoginPassword" class="toggle-password" title="Show Password">👁</span>
-      </div>
-      <button id="loginSubmitBtn">Log In</button>
-      <button id="closeLoginForm">Cancel</button>
-      <div class="forgot-password">
-        <a href="#" id="forgotPasswordLink">Forgot Password?</a>
-      </div>
-    </div>
-
-    <!-- === Task Section === -->
-    <div id="taskSection" style="display: none;">
-      <input type="text" id="taskInput" placeholder="Enter a new task" />
-      <button id="addTaskBtn">Add Task</button>
-
-      <!-- Filter Dropdown -->
-      <div class="filter-container">
-        <label for="filterSelect">Filter: </label>
-        <select id="filterSelect">
-          <option value="all">All Tasks</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-        </select>
+    <!-- Container Body -->
+    <div class="container-body">
+      <!-- Authentication Links -->
+      <div id="authLinks" class="auth-links">
+        <button id="signupBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          Sign Up
+        </button>
+        <button id="loginBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          </svg>
+          Log In
+        </button>
       </div>
 
-      <!-- Task List -->
-      <ul id="taskList"></ul>
+      <!-- Logout Section (Hidden Initially) -->
+      <div id="logoutSection" style="display: none;">
+        <button id="logoutBtn" class="btn-outline">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Log Out
+        </button>
+      </div>
 
-      <!-- Empty Message -->
-      <div class="empty-state" id="emptyStateMsg">No tasks to display.</div>
+      <!-- Sign Up Form -->
+      <div id="signupForm" class="auth-form" style="display: none;">
+        <h2>Create Account</h2>
+        <div class="input-group">
+          <input type="email" id="signupEmail" placeholder="Email" required>
+        </div>
+        <div class="input-group">
+          <input type="password" id="signupPassword" placeholder="Password" required>
+          <span id="toggleSignupPassword" class="toggle-password" title="Show Password">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </span>
+        </div>
+        <div class="password-rules">
+          Password must be at least 8 characters, contain one uppercase letter, one digit, and one special character (@,
+          #, $, &, *, !).
+        </div>
+        <div class="btn-group">
+          <button id="signupSubmitBtn" class="btn-success">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            Register
+          </button>
+          <button id="closeSignupForm" class="btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="auth-form" style="display: none;">
+        <h2>Welcome Back</h2>
+        <div class="input-group">
+          <input type="email" id="loginEmail" placeholder="Email" required>
+        </div>
+        <div class="input-group">
+          <input type="password" id="loginPassword" placeholder="Password" required>
+          <span id="toggleLoginPassword" class="toggle-password" title="Show Password">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </span>
+        </div>
+        <div class="btn-group">
+          <button id="loginSubmitBtn" class="btn-success">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            Log In
+          </button>
+          <button id="closeLoginForm" class="btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Cancel
+          </button>
+        </div>
+        <div class="forgot-password">
+          <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+        </div>
+      </div>
+
+      <!-- Task Section -->
+      <div id="taskSection" style="display: none;">
+        <div class="task-input-group">
+          <input type="text" id="taskInput" placeholder="What needs to be done?" autocomplete="off">
+          <button id="addTaskBtn" class="btn-success">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add
+          </button>
+        </div>
+
+        <!-- Filter Container -->
+        <div class="filter-container">
+          <label for="filterSelect">Filter:</label>
+          <select id="filterSelect">
+            <option value="all">All Tasks</option>
+            <option value="completed">Completed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+
+        <!-- Task List -->
+        <ul id="taskList" class="task-list"></ul>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyStateMsg">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <p>No tasks to display. Add a task to get started!</p>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- === Scripts === -->
+  <!-- Template for Task Item (will be cloned by JavaScript) -->
+  <template id="taskItemTemplate">
+    <li class="task-item">
+      <div class="task-checkbox">
+        <input type="checkbox">
+        <span class="checkmark"></span>
+      </div>
+      <div class="task-content"></div>
+      <div class="task-actions">
+        <button class="edit" title="Edit Task">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+        <button class="delete" title="Delete Task">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
+    </li>
+  </template>
+
+  <!-- Template for Notification -->
+  <template id="notificationTemplate">
+    <div class="notification">
+      <div class="progress-bar"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span class="notification-message"></span>
+    </div>
+  </template>
+
+  <!-- Scripts -->
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
+
 </html>

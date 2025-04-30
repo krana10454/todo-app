@@ -38,6 +38,9 @@ class MongoManager:
 
     def find_all_tasks(self):
         return self.tasks_collection.find()
+        
+    def find_tasks_by_user_id(self, user_id):
+        return self.tasks_collection.find({"userID": user_id})
 
     def update_task(self, task_id, update_fields):
         from bson import ObjectId
